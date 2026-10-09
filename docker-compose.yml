@@ -1,0 +1,27 @@
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: autoclave_mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+
+  autoclave-dashboard:
+    build: .
+    container_name: autoclave_dashboard
+    restart: unless-stopped
+    depends_on:
+      - mosquitto
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data
+      - ./templates:/app/templates
+      - ./main.py:/app/main.py
+    environment:
+      - DB_PATH=/app/data/autoclave.db
+      - MQTT_HOST=mosquitto
+      - MQTT_PORT=1883

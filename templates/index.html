@@ -1,0 +1,1920 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Otoklav / Fikse Makinesi SCADA Paneli</title>
+
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
+  <style>
+    :root {
+      --font-main: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+
+      /* Açık Tema (Varsayılan) */
+      --bg-body: #f4f6f9;
+      --bg-sidebar: #ffffff;
+      --bg-card: #ffffff;
+      --bg-card-hover: #f8fafc;
+      --bg-input: #f1f5f9;
+      --border-color: rgba(0, 0, 0, 0.08);
+      --border-color-strong: rgba(0, 0, 0, 0.16);
+
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --text-dim: #94a3b8;
+
+      --accent-cyan: #0284c7;
+      --accent-cyan-light: #e0f2fe;
+      --accent-blue: #2563eb;
+      --accent-emerald: #10b981;
+      --accent-emerald-light: #d1fae5;
+      --accent-amber: #d97706;
+      --accent-amber-light: #fef3c7;
+      --accent-orange: #ea580c;
+      --accent-orange-light: #ffedd5;
+      --accent-rose: #e11d48;
+      --accent-rose-light: #ffe4e6;
+      --accent-purple: #7c3aed;
+
+      --shadow-card: 0 4px 16px -2px rgba(0, 0, 0, 0.06);
+      --shadow-glow: 0 0 15px rgba(37, 99, 235, 0.18);
+      --sidebar-width: 270px;
+    }
+
+    [data-theme="dark"] {
+      --bg-body: #0b0f17;
+      --bg-sidebar: #0f172a;
+      --bg-card: rgba(17, 24, 39, 0.9);
+      --bg-card-hover: rgba(30, 41, 59, 0.95);
+      --bg-input: #1e293b;
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-color-strong: rgba(255, 255, 255, 0.16);
+
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+
+      --accent-cyan: #06b6d4;
+      --accent-cyan-light: rgba(6, 182, 212, 0.15);
+      --accent-blue: #3b82f6;
+      --accent-emerald: #10b981;
+      --accent-emerald-light: rgba(16, 185, 129, 0.15);
+      --accent-amber: #f59e0b;
+      --accent-amber-light: rgba(245, 158, 11, 0.15);
+      --accent-orange: #f97316;
+      --accent-orange-light: rgba(249, 115, 22, 0.15);
+      --accent-rose: #f43f5e;
+      --accent-rose-light: rgba(244, 63, 94, 0.15);
+      --accent-purple: #8b5cf6;
+
+      --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+      --shadow-glow: 0 0 15px rgba(6, 182, 212, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    }
+
+    body {
+      font-family: var(--font-main);
+      background-color: var(--bg-body);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      overflow-x: hidden;
+    }
+
+    /* ---------------- Sidebar ---------------- */
+    .sidebar {
+      width: var(--sidebar-width);
+      background-color: var(--bg-sidebar);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      z-index: 50;
+      padding: 24px 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 24px;
+    }
+
+    .brand-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.25rem;
+      color: #ffffff;
+      box-shadow: var(--shadow-glow);
+    }
+
+    .brand-text h1 {
+      font-size: 1.05rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+
+    .brand-text span {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+    }
+
+    .nav-menu {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex: 1;
+    }
+
+    .nav-item button {
+      width: 100%;
+      background: none;
+      border: 1px solid transparent;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      color: var(--text-muted);
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: left;
+      font-family: inherit;
+    }
+
+    .nav-item button:hover {
+      background-color: var(--bg-card-hover);
+      color: var(--text-main);
+      border-color: var(--border-color);
+    }
+
+    .nav-item.active button {
+      background: linear-gradient(90deg, rgba(2, 132, 199, 0.12), rgba(37, 99, 235, 0.06));
+      color: var(--accent-cyan);
+      border-color: rgba(2, 132, 199, 0.35);
+      font-weight: 700;
+    }
+
+    [data-theme="dark"] .nav-item.active button {
+      background: linear-gradient(90deg, rgba(6, 182, 212, 0.18), rgba(59, 130, 246, 0.08));
+      color: var(--accent-cyan);
+      border-color: rgba(6, 182, 212, 0.3);
+    }
+
+    .nav-badge {
+      margin-left: auto;
+      font-size: 0.7rem;
+      padding: 2px 7px;
+      border-radius: 6px;
+      background: var(--bg-input);
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+      font-weight: 700;
+    }
+
+    .nav-badge.danger {
+      background: var(--accent-rose);
+      color: #fff;
+    }
+
+    .sidebar-footer {
+      padding-top: 18px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 0.78rem;
+      color: var(--text-dim);
+    }
+
+    .system-status-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      border-radius: 8px;
+      color: var(--accent-emerald);
+      font-weight: 700;
+      font-size: 0.75rem;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--accent-emerald);
+      box-shadow: 0 0 8px var(--accent-emerald);
+      animation: pulseAnim 1.8s infinite;
+    }
+
+    @keyframes pulseAnim {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.3); opacity: 1; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+
+    /* ---------------- Main Wrapper & Topbar ---------------- */
+    .main-wrapper {
+      margin-left: var(--sidebar-width);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .topbar {
+      height: 70px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      background: var(--bg-sidebar);
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      backdrop-filter: blur(10px);
+    }
+
+    .topbar-title h2 {
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .topbar-title span {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* HMI Status Badge */
+    .hmi-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      letter-spacing: 0.02em;
+      transition: all 0.25s ease;
+      user-select: none;
+    }
+
+    .hmi-status-pill.online {
+      background: rgba(16, 185, 129, 0.12);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.15);
+    }
+
+    .hmi-status-pill.online .status-indicator-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background-color: #10b981;
+      box-shadow: 0 0 8px #10b981;
+      animation: pulseGreen 1.8s infinite;
+    }
+
+    .hmi-status-pill.offline {
+      background: rgba(239, 68, 68, 0.14);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.45);
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
+    }
+
+    .hmi-status-pill.offline .status-indicator-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background-color: #ef4444;
+      box-shadow: 0 0 8px #ef4444;
+      animation: pulseRed 0.9s infinite;
+    }
+
+    @keyframes pulseGreen {
+      0% { transform: scale(0.9); opacity: 0.85; }
+      50% { transform: scale(1.3); opacity: 1; }
+      100% { transform: scale(0.9); opacity: 0.85; }
+    }
+
+    @keyframes pulseRed {
+      0% { transform: scale(0.85); opacity: 0.7; }
+      50% { transform: scale(1.4); opacity: 1; }
+      100% { transform: scale(0.85); opacity: 0.7; }
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--border-color);
+      background: var(--bg-input);
+      color: var(--text-main);
+      text-decoration: none;
+      font-family: inherit;
+    }
+
+    .btn:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-color-strong);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+      color: #fff;
+      border: none;
+      box-shadow: 0 2px 10px rgba(2, 132, 199, 0.25);
+    }
+
+    .btn-primary:hover {
+      opacity: 0.92;
+    }
+
+    .btn-danger {
+      background: var(--accent-rose);
+      color: #fff;
+      border: none;
+    }
+
+    .page-content {
+      padding: 28px 32px 48px;
+      flex: 1;
+    }
+
+    /* ---------------- Global Cards & Badges ---------------- */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 20px 22px;
+      box-shadow: var(--shadow-card);
+      backdrop-filter: blur(10px);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .card-title {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      font-family: var(--font-mono);
+    }
+
+    .badge-success {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent-emerald);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .badge-danger {
+      background: rgba(244, 63, 94, 0.15);
+      color: var(--accent-rose);
+      border: 1px solid rgba(244, 63, 94, 0.3);
+    }
+
+    .badge-warning {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--accent-amber);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .badge-info {
+      background: rgba(2, 132, 199, 0.15);
+      color: var(--accent-cyan);
+      border: 1px solid rgba(2, 132, 199, 0.3);
+    }
+
+    /* ---------------- SCADA Grid Layout (Ekran 1) ---------------- */
+    .scada-layout {
+      display: grid;
+      grid-template-columns: 330px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    @media (max-width: 1100px) {
+      .scada-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .kpi-column {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .kpi-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 20px 22px;
+      box-shadow: var(--shadow-card);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .kpi-val {
+      font-size: 1.85rem;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      line-height: 1.15;
+      margin: 8px 0;
+    }
+
+    .kpi-sub {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .state-indicator {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .state-indicator.running {
+      background-color: var(--accent-emerald);
+      box-shadow: 0 0 12px var(--accent-emerald);
+      animation: pulseAnim 1.5s infinite;
+    }
+
+    .state-indicator.stopped {
+      background-color: var(--accent-rose);
+      box-shadow: 0 0 10px var(--accent-rose);
+    }
+
+    .live-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+    }
+
+    /* Live Big Metrics Grid */
+    .metrics-dual-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .metric-sub-card {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 14px 12px;
+      text-align: center;
+    }
+
+    .metric-sub-label {
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .metric-sub-value {
+      font-family: var(--font-mono);
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-top: 4px;
+    }
+
+    /* Charts Column */
+    .charts-column {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .chart-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 20px 24px;
+      box-shadow: var(--shadow-card);
+    }
+
+    .chart-canvas-wrapper {
+      position: relative;
+      height: 240px;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    /* Chart Mode Tab Switcher */
+    .view-mode-tabs {
+      display: inline-flex;
+      background: var(--bg-input);
+      padding: 3px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      gap: 4px;
+    }
+
+    .view-mode-tab {
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .view-mode-tab.active {
+      background: var(--bg-card);
+      color: var(--text-main);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Alarms Status Grid (Ekran 1 Alt Panel) */
+    .alarm-indicators-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+    }
+
+    .alarm-indicator-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: var(--shadow-card);
+    }
+
+    .alarm-indicator-item.alarm-triggered {
+      border-color: var(--accent-rose);
+      background: rgba(244, 63, 94, 0.08);
+      animation: alertPulse 1.5s infinite;
+    }
+
+    @keyframes alertPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.4); }
+      50% { box-shadow: 0 0 0 6px rgba(244, 63, 94, 0); }
+    }
+
+    .alarm-indicator-name {
+      font-size: 0.86rem;
+      font-weight: 700;
+    }
+
+    /* ---------------- Ekran 2: Arıza Analizi ---------------- */
+    .ekran2-grid {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    @media (max-width: 1024px) {
+      .ekran2-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .alarm-counts-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .alarm-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: var(--shadow-card);
+      transition: transform 0.15s ease, border-color 0.15s ease;
+    }
+
+    .alarm-box:hover {
+      border-color: var(--accent-cyan);
+      transform: translateY(-2px);
+    }
+
+    .alarm-box-name {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .alarm-box-count {
+      font-family: var(--font-mono);
+      font-size: 1.85rem;
+      font-weight: 800;
+      color: var(--accent-rose);
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+
+    .alarm-box-count span {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-dim);
+    }
+
+    .table-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 20px 22px;
+      box-shadow: var(--shadow-card);
+    }
+
+    .table-responsive {
+      width: 100%;
+      overflow-x: auto;
+      margin-top: 14px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.86rem;
+    }
+
+    thead th {
+      padding: 12px 14px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 2px solid var(--border-color);
+      background: var(--bg-input);
+    }
+
+    tbody td {
+      padding: 14px;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-main);
+    }
+
+    tbody tr:hover {
+      background: var(--bg-card-hover);
+    }
+
+    .table-mono {
+      font-family: var(--font-mono);
+      font-size: 0.84rem;
+    }
+
+    /* ---------------- Report Page Styles ---------------- */
+    .report-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 32px;
+      box-shadow: var(--shadow-card);
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .report-header {
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 20px;
+      margin-bottom: 24px;
+    }
+
+    .report-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    .report-field {
+      padding: 12px 16px;
+      background: var(--bg-input);
+      border-radius: 8px;
+    }
+
+    .report-field span {
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      display: block;
+    }
+
+    .report-field strong {
+      font-size: 1.05rem;
+      font-family: var(--font-mono);
+    }
+
+    /* Hide unused tabs */
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Print media query */
+    @media print {
+      .sidebar, .topbar, .btn-no-print {
+        display: none !important;
+      }
+      .main-wrapper {
+        margin-left: 0 !important;
+      }
+      body {
+        background: #ffffff !important;
+        color: #000000 !important;
+      }
+      .report-card {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ================= Left Sidebar Navigation ================= -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-icon">O</div>
+      <div class="brand-text">
+        <h1>OTOKLAV SCADA</h1>
+        <span>Endüstriyel Telemetri v2.4</span>
+      </div>
+    </div>
+
+    <ul class="nav-menu">
+      <li class="nav-item active" id="nav-item-page1">
+        <button onclick="switchTab('page1')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+          <span>Ekran 1: Canlı İzleme</span>
+          <span class="nav-badge">LIVE</span>
+        </button>
+      </li>
+      <li class="nav-item" id="nav-item-page2">
+        <button onclick="switchTab('page2')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span>Ekran 2: Arıza Kayıtları</span>
+          <span class="nav-badge" id="sidebar-alarm-badge">0</span>
+        </button>
+      </li>
+      <li class="nav-item" id="nav-item-report">
+        <button onclick="switchTab('report')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          <span>Proses Raporu</span>
+          <span class="nav-badge">PDF</span>
+        </button>
+      </li>
+    </ul>
+
+    <div class="sidebar-footer">
+      <div class="system-status-pill">
+        <div class="pulse-dot"></div>
+        <span id="sidebar-live-status-text">CANLI VERİ AKIŞI AKTİF</span>
+      </div>
+      <div><strong>HMI Cihazı:</strong> <span id="sidebar-device-model">WECON HMI</span> <span id="sidebar-device-ip" style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent-cyan);">(192.168.3.48)</span></div>
+      <div><strong>Broker:</strong> <span style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-muted);">192.168.3.200:1883</span></div>
+      <div><strong>Sistem Saati:</strong> <span id="sidebar-clock" style="font-family: var(--font-mono); font-weight: 700;">--:--:--</span></div>
+    </div>
+  </aside>
+
+  <!-- ================= Main Content Container ================= -->
+  <div class="main-wrapper">
+    <header class="topbar">
+      <div class="topbar-title">
+        <h2 id="topbar-main-title">Ekran 1: Canlı Proses İzleme</h2>
+        <span id="topbar-sub-title">WECON HMI & Omron PLC Gerçek Zamanlı Telemetri</span>
+      </div>
+
+      <div class="topbar-actions">
+        <!-- HMI Bağlantı Durum Rozeti -->
+        <div id="hmi-conn-badge" class="hmi-status-pill online" title="HMI Donanım Bağlantı Durumu">
+          <span class="status-indicator-dot"></span>
+          <span id="hmi-conn-text" class="status-indicator-text">HMI ÇEVRİMİÇİ (ONLINE)</span>
+        </div>
+
+        <button class="btn" id="btn-pause-stream" onclick="togglePause()">
+          <span id="pause-icon">⏸</span>
+          <span id="pause-text">Akışı Duraklat</span>
+        </button>
+
+        <button class="btn btn-primary" onclick="refreshAll()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>
+          <span>Şimdi Yenile</span>
+        </button>
+
+        <!-- Tema Değiştirme Butonu -->
+        <button class="btn" id="theme-toggle" title="Açık / Koyu Tema Değiştir" onclick="toggleTheme()">
+          <span id="theme-icon">🌙</span>
+          <span id="theme-text">Koyu Tema</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <!-- ================= SEKME 1: CANLI İZLEME ================= -->
+      <div id="tab-page1" class="tab-content active">
+        <div class="scada-layout">
+
+          <!-- Sol Sütun: SCADA KPI Kartları -->
+          <div class="kpi-column">
+            
+            <!-- 1. Makine Durumu Kartı -->
+            <div class="kpi-card" id="card-machine-status">
+              <div class="card-header">
+                <span class="card-title">Makine Durumu</span>
+                <span class="badge badge-success" id="status-badge">ÇALIŞIYOR</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 14px;">
+                <div id="status-lamp" class="state-indicator running"></div>
+                <div class="kpi-val" id="status-val" style="color: var(--accent-emerald);">ÇALIŞIYOR</div>
+              </div>
+              <div class="kpi-sub" style="margin-top: 10px;">
+                <span>Program:</span>
+                <strong id="prog-badge-val" style="color: var(--accent-cyan); font-family: var(--font-mono);">PROG #1</strong>
+                <span style="margin: 0 4px;">•</span>
+                <span>PLC Çevrimi: Normal</span>
+              </div>
+            </div>
+
+            <!-- 2. Çalışma Süresi Kartı -->
+            <div class="kpi-card">
+              <div class="card-header">
+                <span class="card-title">Çalışma Süresi</span>
+                <span class="badge badge-info">ZAMANLAYICI</span>
+              </div>
+              <div class="kpi-val" id="duration-val" style="color: var(--accent-cyan);">00:00:00</div>
+              <div class="kpi-sub" style="margin-top: 10px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <span>Son Paket:</span>
+                <strong id="last-seen-text" style="color: var(--accent-emerald); font-family: var(--font-mono);">Şimdi</strong>
+              </div>
+            </div>
+
+            <!-- 3. Adım Durumu Kartı -->
+            <div class="kpi-card">
+              <div class="card-header">
+                <span class="card-title">Adım Durumu</span>
+                <span class="badge badge-warning" id="kpi-step-badge">PROSES</span>
+              </div>
+              <div class="kpi-val" id="step-name" style="font-size: 1.45rem; color: var(--accent-amber);">VAKUM</div>
+              <div class="kpi-sub" style="margin-top: 10px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                <span>Aktif Proses Aşaması</span>
+              </div>
+            </div>
+
+            <!-- 4. Anlık Göstergeler (Sıcaklık & Basınç) -->
+            <div class="kpi-card">
+              <div class="card-header" style="margin-bottom: 8px;">
+                <span class="card-title">Anlık Değerler</span>
+                <span class="badge badge-info">CANLI</span>
+              </div>
+              <div class="metrics-dual-grid">
+                <div class="metric-sub-card">
+                  <div class="metric-sub-label">Sıcaklık</div>
+                  <div class="metric-sub-value" id="kpi-temp-val" style="color: var(--accent-orange);">0.0 °C</div>
+                </div>
+                <div class="metric-sub-card">
+                  <div class="metric-sub-label">Basınç</div>
+                  <div class="metric-sub-value" id="kpi-press-val" style="color: var(--accent-cyan);">0.00 Bar</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Sağ Sütun: Grafikler & Anlık Arıza Kartları -->
+          <div class="charts-column">
+
+            <!-- Grafik Görünüm Seçici -->
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.88rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em;">Telemetri Eğrileri</span>
+              <div class="view-mode-tabs">
+                <button class="view-mode-tab active" id="btn-view-stacked" onclick="setViewMode('stacked')">Ayrık Grafikler (Önerilen)</button>
+                <button class="view-mode-tab" id="btn-view-combined" onclick="setViewMode('combined')">Çift Y-Eksenli Grafik</button>
+              </div>
+            </div>
+
+            <!-- GÖRÜNÜM 1: AYRIK GRAFİKLER (Tam page1.html Stili) -->
+            <div id="view-stacked-container" style="display: flex; flex-direction: column; gap: 20px;">
+              <!-- 1. Üst Grafik: Sadece BASINÇ (Bar) -->
+              <div class="chart-box">
+                <div class="card-header" style="margin-bottom: 4px;">
+                  <div>
+                    <span class="card-title" style="color: var(--accent-cyan); font-weight: 800; font-size: 0.95rem;">BASINÇ GRAFİĞİ</span>
+                    <div style="font-size: 0.76rem; color: var(--text-dim); margin-top: 2px;">
+                      WECON HMI @1#D4 (Basınç) • Son 60 Gerçek Okuma
+                    </div>
+                  </div>
+                  <div class="live-pill" style="color: var(--accent-cyan);">
+                    <span>Anlık Basınç:</span>
+                    <strong id="pressure-live-text">0.00 Bar</strong>
+                  </div>
+                </div>
+                <div class="chart-canvas-wrapper">
+                  <canvas id="pressureChart"></canvas>
+                </div>
+              </div>
+
+              <!-- 2. Alt Grafik: Sadece SICAKLIK (°C) -->
+              <div class="chart-box">
+                <div class="card-header" style="margin-bottom: 4px;">
+                  <div>
+                    <span class="card-title" style="color: var(--accent-orange); font-weight: 800; font-size: 0.95rem;">SICAKLIK GRAFİĞİ</span>
+                    <div style="font-size: 0.76rem; color: var(--text-dim); margin-top: 2px;">
+                      WECON HMI @1#D100 (Sıcaklık) • Son 60 Gerçek Okuma
+                    </div>
+                  </div>
+                  <div class="live-pill" style="color: var(--accent-orange);">
+                    <span>Anlık Sıcaklık:</span>
+                    <strong id="temp-live-text">0.0 °C</strong>
+                  </div>
+                </div>
+                <div class="chart-canvas-wrapper">
+                  <canvas id="temperatureChart"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <!-- GÖRÜNÜM 2: BİRLEŞİK ÇİFT Y-EKSENLİ GRAFİK -->
+            <div id="view-combined-container" class="chart-box" style="display: none;">
+              <div class="card-header" style="margin-bottom: 4px;">
+                <div>
+                  <span class="card-title" style="color: var(--accent-purple); font-weight: 800; font-size: 0.95rem;">SICAKLIK & BASINÇ KOMBİNE GRAFİK</span>
+                  <div style="font-size: 0.76rem; color: var(--text-dim); margin-top: 2px;">
+                    Sol Y Ekseni: Sıcaklık (°C) | Sağ Y Ekseni: Basınç (Bar)
+                  </div>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                  <div class="live-pill" style="color: var(--accent-orange);">
+                    <strong id="comb-temp-text">0.0 °C</strong>
+                  </div>
+                  <div class="live-pill" style="color: var(--accent-cyan);">
+                    <strong id="comb-press-text">0.00 Bar</strong>
+                  </div>
+                </div>
+              </div>
+              <div class="chart-canvas-wrapper" style="height: 360px;">
+                <canvas id="combinedChart"></canvas>
+              </div>
+            </div>
+
+            <!-- Anlık Arıza Durum Paneli -->
+            <div class="chart-box">
+              <div class="card-header" style="margin-bottom: 12px;">
+                <span class="card-title">Anlık PLC Giriş & Arıza Durumları</span>
+                <span class="badge badge-success" id="active-alarm-count-badge">0 AKTİF ARIZA</span>
+              </div>
+              <div class="alarm-indicators-grid">
+                <div class="alarm-indicator-item" id="ind-vakum">
+                  <div>
+                    <div class="alarm-indicator-name">Vakum Motor Arıza</div>
+                    <div style="font-size: 0.72rem; color: var(--text-dim); font-family: var(--font-mono);">CIO 0.0</div>
+                  </div>
+                  <span class="badge badge-success" id="badge-ind-vakum">NORMAL</span>
+                </div>
+                <div class="alarm-indicator-item" id="ind-kapak">
+                  <div>
+                    <div class="alarm-indicator-name">Kapak Motor Arıza</div>
+                    <div style="font-size: 0.72rem; color: var(--text-dim); font-family: var(--font-mono);">CIO 0.1</div>
+                  </div>
+                  <span class="badge badge-success" id="badge-ind-kapak">NORMAL</span>
+                </div>
+                <div class="alarm-indicator-item" id="ind-maxbasinc">
+                  <div>
+                    <div class="alarm-indicator-name">Max Basınç Alarmı</div>
+                    <div style="font-size: 0.72rem; color: var(--text-dim); font-family: var(--font-mono);">CIO 0.4</div>
+                  </div>
+                  <span class="badge badge-success" id="badge-ind-maxbasinc">NORMAL</span>
+                </div>
+                <div class="alarm-indicator-item" id="ind-acildur">
+                  <div>
+                    <div class="alarm-indicator-name">Acil Stop</div>
+                    <div style="font-size: 0.72rem; color: var(--text-dim); font-family: var(--font-mono);">CIO 0.5</div>
+                  </div>
+                  <span class="badge badge-success" id="badge-ind-acildur">NORMAL</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ================= SEKME 2: ARIZA KAYITLARI & ANALİZ ================= -->
+      <div id="tab-page2" class="tab-content">
+        <div class="ekran2-grid">
+          
+          <!-- Sol Panel: Arıza İstatistik Kutuları -->
+          <div class="alarm-counts-panel">
+            <div class="alarm-box">
+              <div class="alarm-box-name">Toplam Kayıtlı Olay</div>
+              <div class="alarm-box-count" id="stat-total-alarms" style="color: var(--accent-cyan);">0 <span>adet</span></div>
+            </div>
+            <div class="alarm-box">
+              <div class="alarm-box-name">Aktif Arızalar</div>
+              <div class="alarm-box-count" id="stat-active-alarms" style="color: var(--accent-rose);">0 <span>aktif</span></div>
+            </div>
+            <div class="alarm-box">
+              <div class="alarm-box-name">Çözülen Arızalar</div>
+              <div class="alarm-box-count" id="stat-resolved-alarms" style="color: var(--accent-emerald);">0 <span>çözüldü</span></div>
+            </div>
+            <div class="alarm-box">
+              <div class="alarm-box-name">Vakum Motor Arızaları</div>
+              <div class="alarm-box-count" id="stat-vakum-count">0 <span>defa</span></div>
+            </div>
+            <div class="alarm-box">
+              <div class="alarm-box-name">Kapak Motor Arızaları</div>
+              <div class="alarm-box-count" id="stat-kapak-count">0 <span>defa</span></div>
+            </div>
+            <div class="alarm-box">
+              <div class="alarm-box-name">Max Basınç Alarmları</div>
+              <div class="alarm-box-count" id="stat-basinc-count">0 <span>defa</span></div>
+            </div>
+            <div class="alarm-box">
+              <div class="alarm-box-name">Acil Stop Kesintileri</div>
+              <div class="alarm-box-count" id="stat-acil-count">0 <span>defa</span></div>
+            </div>
+          </div>
+
+          <!-- Sağ Panel: Arıza Geçmişi Tablosu -->
+          <div class="table-box">
+            <div class="card-header" style="margin-bottom: 8px;">
+              <div>
+                <span class="card-title" style="font-size: 1rem; color: var(--text-main);">Arıza Günlüğü (Alarm Engine Logs)</span>
+                <div style="font-size: 0.78rem; color: var(--text-dim); margin-top: 2px;">
+                  Süresi anlık hesaplanan aktif ve geçmiş arıza kayıtları
+                </div>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button class="btn" onclick="exportAlarmsToCSV()">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  <span>CSV İndir</span>
+                </button>
+                <button class="btn btn-primary" onclick="fetchAlarms()">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>
+                  <span>Yenile</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th>#ID</th>
+                    <th>Arıza Adı</th>
+                    <th>Başlangıç Zamanı</th>
+                    <th>Bitiş Zamanı</th>
+                    <th>Toplam / Geçen Süre</th>
+                    <th>Durum</th>
+                  </tr>
+                </thead>
+                <tbody id="alarms-table-body">
+                  <tr>
+                    <td colspan="6" style="text-align: center; color: var(--text-dim); padding: 30px;">
+                      Yükleniyor...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ================= SEKME 3: PROSES RAPORU ================= -->
+      <div id="tab-report" class="tab-content">
+        <div class="report-card">
+          <div class="report-header">
+            <div>
+              <h2 style="font-size: 1.35rem; font-weight: 800;">OTOKLAV / FİKSE PROSES VE KALİTE BELGESİ</h2>
+              <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 4px;">WECON Endüstriyel Otomasyon & Data Historian Raporu</p>
+            </div>
+            <div style="text-align: right;">
+              <button class="btn btn-primary btn-no-print" onclick="window.print()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+                <span>Yazdır / PDF Kaydet</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="report-grid">
+            <div class="report-field">
+              <span>Rapor Üretim Tarihi</span>
+              <strong id="rep-date">--</strong>
+            </div>
+            <div class="report-field">
+              <span>HMI Cihazı & IP</span>
+              <strong id="rep-device-info">WECON HMI (192.168.3.48)</strong>
+            </div>
+            <div class="report-field">
+              <span>Aktif Program & Reçete</span>
+              <strong id="rep-prog">PROG #1</strong>
+            </div>
+            <div class="report-field">
+              <span>Son Kaydedilen Aşama</span>
+              <strong id="rep-step">--</strong>
+            </div>
+            <div class="report-field">
+              <span>Anlık Sıcaklık Değeri</span>
+              <strong id="rep-temp" style="color: var(--accent-orange);">-- °C</strong>
+            </div>
+            <div class="report-field">
+              <span>Anlık Basınç Değeri</span>
+              <strong id="rep-press" style="color: var(--accent-cyan);">-- Bar</strong>
+            </div>
+          </div>
+
+          <div style="margin-top: 24px;">
+            <h3 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 12px; color: var(--text-muted); text-transform: uppercase;">
+              Aktif / Son Oluşan Arıza Durumları
+            </h3>
+            <div class="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Arıza Tanımı</th>
+                    <th>Başlangıç</th>
+                    <th>Bitiş</th>
+                    <th>Toplam Süre</th>
+                    <th>Durum</th>
+                  </tr>
+                </thead>
+                <tbody id="rep-alarms-body">
+                  <tr>
+                    <td colspan="5" style="text-align: center; color: var(--text-dim); padding: 20px;">Kayıt bulunamadı.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div style="margin-top: 36px; padding-top: 20px; border-top: 1px dashed var(--border-color); display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-dim);">
+            <div>Sistem Operatörü: _____________________</div>
+            <div>Kalite Kontrol Onayı: _____________________</div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ================= JavaScript Uygulama Mantığı ================= -->
+  <script>
+    // ----------------------------------------------------------------
+    // 1. Durum ve Değişkenler
+    // ----------------------------------------------------------------
+    let isPaused = false;
+    let viewMode = 'stacked'; // 'stacked' | 'combined'
+    let currentTheme = localStorage.getItem('scada_theme') || 'light';
+    let pressureChart = null;
+    let temperatureChart = null;
+    let combinedChart = null;
+
+    let totalWorkSeconds = 0;
+    let workTimerInterval = null;
+    let allAlarmsCache = [];
+
+    // ----------------------------------------------------------------
+    // 2. Tema Yönetimi (Açık / Koyu Tema)
+    // ----------------------------------------------------------------
+    function initTheme() {
+      document.documentElement.setAttribute('data-theme', currentTheme);
+      updateThemeButton(currentTheme);
+    }
+
+    function toggleTheme() {
+      currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', currentTheme);
+      localStorage.setItem('scada_theme', currentTheme);
+      updateThemeButton(currentTheme);
+      updateChartThemes();
+    }
+
+    function updateThemeButton(theme) {
+      const iconEl = document.getElementById('theme-icon');
+      const textEl = document.getElementById('theme-text');
+      if (theme === 'dark') {
+        iconEl.textContent = '☀️';
+        textEl.textContent = 'Açık Tema';
+      } else {
+        iconEl.textContent = '🌙';
+        textEl.textContent = 'Koyu Tema';
+      }
+    }
+
+    function getChartThemeColors() {
+      const isDark = (document.documentElement.getAttribute('data-theme') === 'dark');
+      return {
+        gridColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+        textColor: isDark ? '#94a3b8' : '#475569',
+        fontFamily: "'JetBrains Mono', monospace"
+      };
+    }
+
+    function updateChartThemes() {
+      const c = getChartThemeColors();
+
+      [pressureChart, temperatureChart, combinedChart].forEach(chart => {
+        if (!chart) return;
+        if (chart.options.scales.x) {
+          chart.options.scales.x.grid.color = c.gridColor;
+          chart.options.scales.x.ticks.color = c.textColor;
+        }
+        if (chart.options.scales.y) {
+          chart.options.scales.y.grid.color = c.gridColor;
+          chart.options.scales.y.ticks.color = c.textColor;
+        }
+        if (chart.options.scales.y1) {
+          chart.options.scales.y1.grid.color = c.gridColor;
+          chart.options.scales.y1.ticks.color = c.textColor;
+        }
+        chart.update('none');
+      });
+    }
+
+    // ----------------------------------------------------------------
+    // 3. Sekme Değiştirme (SPA Modeli)
+    // ----------------------------------------------------------------
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+
+      const targetTab = document.getElementById('tab-' + tabId);
+      const targetNav = document.getElementById('nav-item-' + tabId);
+      if (targetTab) targetTab.classList.add('active');
+      if (targetNav) targetNav.classList.add('active');
+
+      const titleEl = document.getElementById('topbar-main-title');
+      const subEl = document.getElementById('topbar-sub-title');
+
+      if (tabId === 'page1') {
+        titleEl.textContent = 'Ekran 1: Canlı Proses İzleme';
+        subEl.textContent = 'WECON HMI & Omron PLC Gerçek Zamanlı Telemetri';
+        setTimeout(() => {
+          if (pressureChart) pressureChart.resize();
+          if (temperatureChart) temperatureChart.resize();
+          if (combinedChart) combinedChart.resize();
+        }, 50);
+      } else if (tabId === 'page2') {
+        titleEl.textContent = 'Ekran 2: Arıza Kayıtları & Alarm Analizi';
+        subEl.textContent = 'Veritabanı Alarm Günlüğü ve Canlı Süre Takibi';
+        fetchAlarms();
+      } else if (tabId === 'report') {
+        titleEl.textContent = 'Ekran 3: Proses & Kalite Raporu';
+        subEl.textContent = 'WECON Endüstriyel Otoklav Doğrulama Çıktısı';
+        updateReportView();
+      }
+    }
+
+    // URL Path Check for /page1, /page2, /report
+    function checkInitialPath() {
+      const path = window.location.pathname;
+      if (path === '/page2') switchTab('page2');
+      else if (path === '/report') switchTab('report');
+      else switchTab('page1');
+    }
+
+    // ----------------------------------------------------------------
+    // 4. Görünüm Modu Değiştirme (Ayrık vs Çift Y-Eksen)
+    // ----------------------------------------------------------------
+    function setViewMode(mode) {
+      viewMode = mode;
+      const stackedCont = document.getElementById('view-stacked-container');
+      const combCont = document.getElementById('view-combined-container');
+      const btnStacked = document.getElementById('btn-view-stacked');
+      const btnComb = document.getElementById('btn-view-combined');
+
+      if (mode === 'stacked') {
+        stackedCont.style.display = 'flex';
+        combCont.style.display = 'none';
+        btnStacked.classList.add('active');
+        btnComb.classList.remove('active');
+        setTimeout(() => {
+          if (pressureChart) pressureChart.resize();
+          if (temperatureChart) temperatureChart.resize();
+        }, 50);
+      } else {
+        stackedCont.style.display = 'none';
+        combCont.style.display = 'block';
+        btnStacked.classList.remove('active');
+        btnComb.classList.add('active');
+        setTimeout(() => {
+          if (combinedChart) combinedChart.resize();
+        }, 50);
+      }
+    }
+
+    // ----------------------------------------------------------------
+    // 5. Chart.js Grafik Başlatma (Dual Çift Y + İki Ayrık Grafik)
+    // ----------------------------------------------------------------
+    function initCharts() {
+      const c = getChartThemeColors();
+
+      // Ortak Konfigürasyon
+      const commonScales = (yLabel, minVal, maxVal, stepSize) => ({
+        x: {
+          grid: { color: c.gridColor },
+          ticks: { color: c.textColor, font: { family: c.fontFamily, size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 }
+        },
+        y: {
+          grid: { color: c.gridColor },
+          ticks: { color: c.textColor, font: { family: c.fontFamily, size: 11 }, stepSize: stepSize },
+          title: { display: true, text: yLabel, color: c.textColor, font: { size: 11, weight: 'bold' } },
+          min: minVal,
+          max: maxVal
+        }
+      });
+
+      // 1. Basınç Grafiği (Bar)
+      const ctxP = document.getElementById('pressureChart').getContext('2d');
+      pressureChart = new Chart(ctxP, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [{
+            label: 'Basınç (Bar)',
+            data: [],
+            borderColor: '#0284c7',
+            backgroundColor: 'rgba(2, 132, 199, 0.12)',
+            borderWidth: 2.2,
+            tension: 0.35,
+            fill: true,
+            pointRadius: 2.5,
+            pointHoverRadius: 5
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 300 },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              mode: 'index',
+              intersect: false,
+              callbacks: { label: ctx => ` ${ctx.parsed.y.toFixed(2)} Bar` }
+            }
+          },
+          scales: commonScales('Basınç (Bar)', -1.0, 4.0, 0.5)
+        }
+      });
+
+      // 2. Sıcaklık Grafiği (°C)
+      const ctxT = document.getElementById('temperatureChart').getContext('2d');
+      temperatureChart = new Chart(ctxT, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [{
+            label: 'Sıcaklık (°C)',
+            data: [],
+            borderColor: '#ea580c',
+            backgroundColor: 'rgba(234, 88, 12, 0.12)',
+            borderWidth: 2.2,
+            tension: 0.35,
+            fill: true,
+            pointRadius: 2.5,
+            pointHoverRadius: 5
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 300 },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              mode: 'index',
+              intersect: false,
+              callbacks: { label: ctx => ` ${ctx.parsed.y.toFixed(1)} °C` }
+            }
+          },
+          scales: commonScales('Sıcaklık (°C)', 0, 160, 20)
+        }
+      });
+
+      // 3. Birleşik Çift Y-Eksenli Grafik (Sol: °C, Sağ: Bar)
+      const ctxComb = document.getElementById('combinedChart').getContext('2d');
+      combinedChart = new Chart(ctxComb, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: 'Sıcaklık (°C)',
+              data: [],
+              borderColor: '#ea580c',
+              backgroundColor: 'rgba(234, 88, 12, 0.08)',
+              yAxisID: 'y',
+              borderWidth: 2.2,
+              tension: 0.35,
+              fill: false,
+              pointRadius: 2
+            },
+            {
+              label: 'Basınç (Bar)',
+              data: [],
+              borderColor: '#0284c7',
+              backgroundColor: 'rgba(2, 132, 199, 0.08)',
+              yAxisID: 'y1',
+              borderWidth: 2.2,
+              tension: 0.35,
+              fill: false,
+              pointRadius: 2
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 300 },
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: { color: c.textColor, font: { family: c.fontFamily, weight: 'bold' } }
+            },
+            tooltip: { mode: 'index', intersect: false }
+          },
+          scales: {
+            x: {
+              grid: { color: c.gridColor },
+              ticks: { color: c.textColor, font: { family: c.fontFamily, size: 10 }, maxTicksLimit: 8 }
+            },
+            y: {
+              type: 'linear',
+              display: true,
+              position: 'left',
+              grid: { color: c.gridColor },
+              ticks: { color: '#ea580c', font: { family: c.fontFamily } },
+              title: { display: true, text: 'Sıcaklık (°C)', color: '#ea580c' },
+              min: 0,
+              max: 160
+            },
+            y1: {
+              type: 'linear',
+              display: true,
+              position: 'right',
+              grid: { drawOnChartArea: false },
+              ticks: { color: '#0284c7', font: { family: c.fontFamily } },
+              title: { display: true, text: 'Basınç (Bar)', color: '#0284c7' },
+              min: -1.0,
+              max: 4.0
+            }
+          }
+        }
+      });
+    }
+
+    // ----------------------------------------------------------------
+    // 6. Canlı Telemetri & Durum Güncelleme
+    // ----------------------------------------------------------------
+    async function fetchLiveTelemetry() {
+      if (isPaused) return;
+
+      try {
+        const res = await fetch('/api/live?t=' + Date.now(), { cache: 'no-store' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+
+        const t = data.telemetry || {};
+        const temp = parseFloat(t.sicaklik || 0);
+        const pres = parseFloat(t.basinc || 0);
+        const prog = t.program_no || 0;
+        const adim = t.adim_adi || 'ELLE KONTROL';
+        const arizalar = t.arizalar || {};
+        const hmiModel = t.hmi_model || 'WECON HMI';
+        const hmiIp = t.hmi_ip || '192.168.3.48';
+
+        // Cihaz Modeli & IP Rozetlerini Güncelle
+        const sideModelEl = document.getElementById('sidebar-device-model');
+        const sideIpEl = document.getElementById('sidebar-device-ip');
+        const repDeviceEl = document.getElementById('rep-device-info');
+        if (sideModelEl) sideModelEl.textContent = hmiModel;
+        if (sideIpEl) sideIpEl.textContent = `(${hmiIp})`;
+        if (repDeviceEl) repDeviceEl.textContent = `${hmiModel} (${hmiIp})`;
+
+        // 1. Sol Panel KPI'ları
+        document.getElementById('prog-badge-val').textContent = `PROG #${prog}`;
+        document.getElementById('step-name').textContent = adim;
+        document.getElementById('kpi-temp-val').textContent = `${temp.toFixed(1)} °C`;
+        document.getElementById('kpi-press-val').textContent = `${pres.toFixed(2)} Bar`;
+
+        document.getElementById('temp-live-text').textContent = `${temp.toFixed(1)} °C`;
+        document.getElementById('pressure-live-text').textContent = `${pres.toFixed(2)} Bar`;
+        document.getElementById('comb-temp-text').textContent = `${temp.toFixed(1)} °C`;
+        document.getElementById('comb-press-text').textContent = `${pres.toFixed(2)} Bar`;
+
+        // Son Görülme Zamanı
+        if (t.zaman) {
+          document.getElementById('last-seen-text').textContent = t.zaman;
+        }
+
+        // 2. Arıza Göstergeleri (CIO 0.0 - 0.5)
+        updateAlarmIndicator('ind-vakum', 'badge-ind-vakum', arizalar['Vakum Motor Arıza']);
+        updateAlarmIndicator('ind-kapak', 'badge-ind-kapak', arizalar['Kapak Motor Arıza']);
+        updateAlarmIndicator('ind-maxbasinc', 'badge-ind-maxbasinc', arizalar['Max Basınç Alarmı']);
+        updateAlarmIndicator('ind-acildur', 'badge-ind-acildur', arizalar['Acil Stop']);
+
+        const activeCount = (data.active_count !== undefined) ? data.active_count : 0;
+        const alarmBadge = document.getElementById('active-alarm-count-badge');
+        const sideAlarmBadge = document.getElementById('sidebar-alarm-badge');
+
+        if (alarmBadge) {
+          if (activeCount > 0) {
+            alarmBadge.className = 'badge badge-danger';
+            alarmBadge.textContent = `${activeCount} AKTİF ARIZA`;
+          } else {
+            alarmBadge.className = 'badge badge-success';
+            alarmBadge.textContent = '0 AKTİF ARIZA';
+          }
+        }
+        if (sideAlarmBadge) {
+          sideAlarmBadge.textContent = activeCount;
+          if (activeCount > 0) sideAlarmBadge.classList.add('danger');
+          else sideAlarmBadge.classList.remove('danger');
+        }
+
+        // Makine Çalışıyor / Durdu Durumu
+        const statusVal = document.getElementById('status-val');
+        const statusBadge = document.getElementById('status-badge');
+        const statusLamp = document.getElementById('status-lamp');
+
+        if (activeCount > 0 || arizalar['Acil Stop']) {
+          statusVal.textContent = 'ARIZA / DURDU';
+          statusVal.style.color = 'var(--accent-rose)';
+          statusBadge.className = 'badge badge-danger';
+          statusBadge.textContent = 'DURDU';
+          statusLamp.className = 'state-indicator stopped';
+        } else {
+          statusVal.textContent = 'ÇALIŞIYOR';
+          statusVal.style.color = 'var(--accent-emerald)';
+          statusBadge.className = 'badge badge-success';
+          statusBadge.textContent = 'ÇALIŞIYOR';
+          statusLamp.className = 'state-indicator running';
+        }
+
+        // 3. Grafikleri Güncelle
+        if (Array.isArray(data.history) && data.history.length > 0) {
+          const labels = data.history.map(p => p.zaman);
+          const temps = data.history.map(p => p.sicaklik);
+          const presses = data.history.map(p => p.basinc);
+
+          // Ayrık Basınç
+          pressureChart.data.labels = labels;
+          pressureChart.data.datasets[0].data = presses;
+          pressureChart.update('none');
+
+          // Ayrık Sıcaklık
+          temperatureChart.data.labels = labels;
+          temperatureChart.data.datasets[0].data = temps;
+          temperatureChart.update('none');
+
+          // Birleşik Çift Y
+          combinedChart.data.labels = labels;
+          combinedChart.data.datasets[0].data = temps;
+          combinedChart.data.datasets[1].data = presses;
+          combinedChart.update('none');
+        }
+
+      } catch (err) {
+        console.warn('Canlı telemetri çekme hatası:', err);
+      }
+    }
+
+    function updateAlarmIndicator(itemId, badgeId, isAlarm) {
+      const itemEl = document.getElementById(itemId);
+      const badgeEl = document.getElementById(badgeId);
+      if (!itemEl || !badgeEl) return;
+
+      if (isAlarm) {
+        itemEl.classList.add('alarm-triggered');
+        badgeEl.className = 'badge badge-danger';
+        badgeEl.textContent = 'ALARM AKTİF';
+      } else {
+        itemEl.classList.remove('alarm-triggered');
+        badgeEl.className = 'badge badge-success';
+        badgeEl.textContent = 'NORMAL';
+      }
+    }
+
+    // ----------------------------------------------------------------
+    // 7. HMI Bağlantı Durumu Polling (/api/status)
+    // ----------------------------------------------------------------
+    async function checkHmiConnection() {
+      try {
+        const res = await fetch('/api/status?t=' + Date.now(), { cache: 'no-store' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+
+        const badge = document.getElementById('hmi-conn-badge');
+        const text = document.getElementById('hmi-conn-text');
+        const sideText = document.getElementById('sidebar-live-status-text');
+
+        if (data.online) {
+          badge.className = 'hmi-status-pill online';
+          text.textContent = 'HMI ÇEVRİMİÇİ (ONLINE)';
+          badge.title = `HMI Veri Akışı Normal (${data.elapsed_seconds || 0}s önce)`;
+          if (sideText) sideText.textContent = 'CANLI VERİ AKIŞI AKTİF';
+        } else {
+          badge.className = 'hmi-status-pill offline';
+          text.textContent = 'HMI ÇEVRİMDİŞİ (OFFLINE)';
+          badge.title = `HMI ile bağlantı yok! Son veri: ${data.elapsed_seconds || '>5'}s önce`;
+          if (sideText) sideText.textContent = 'HMI VERİ BEKLENİYOR';
+        }
+      } catch (e) {
+        const badge = document.getElementById('hmi-conn-badge');
+        const text = document.getElementById('hmi-conn-text');
+        if (badge && text) {
+          badge.className = 'hmi-status-pill offline';
+          text.textContent = 'SUNUCU KOPUK';
+        }
+      }
+    }
+
+    // ----------------------------------------------------------------
+    // 8. Arıza Listesi & İstatistikleri Çekme (/api/alarms)
+    // ----------------------------------------------------------------
+    async function fetchAlarms() {
+      try {
+        const res = await fetch('/api/alarms?t=' + Date.now(), { cache: 'no-store' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const alarms = await res.json();
+        allAlarmsCache = alarms;
+
+        renderAlarmsTable(alarms);
+        calculateAlarmStats(alarms);
+      } catch (err) {
+        console.warn('Alarmlar alınamadı:', err);
+      }
+    }
+
+    function renderAlarmsTable(alarms) {
+      const tbody = document.getElementById('alarms-table-body');
+      if (!tbody) return;
+
+      if (!alarms || alarms.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-dim); padding: 30px;">Kayıtlı herhangi bir arıza bulunmuyor. Sistem stabil.</td></tr>`;
+        return;
+      }
+
+      let html = '';
+      alarms.forEach(a => {
+        const isAktif = (a.durum === 'Aktif');
+        const badgeClass = isAktif ? 'badge badge-danger' : 'badge badge-success';
+        const sureText = isAktif ? `${a.gecen_sure} (Sürüyor)` : (a.toplam_sure || '-');
+
+        html += `
+          <tr>
+            <td class="table-mono" style="font-weight: 700;">#${a.id}</td>
+            <td style="font-weight: 700;">${a.ariza_adi}</td>
+            <td class="table-mono">${a.baslangic_zamani}</td>
+            <td class="table-mono">${a.bitis_zamani || '-'}</td>
+            <td class="table-mono" style="color: ${isAktif ? 'var(--accent-rose)' : 'var(--text-main)'}; font-weight: 700;">${sureText}</td>
+            <td><span class="${badgeClass}">${a.durum}</span></td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = html;
+    }
+
+    function calculateAlarmStats(alarms) {
+      let total = alarms.length;
+      let active = 0;
+      let resolved = 0;
+      let vakum = 0;
+      let kapak = 0;
+      let basinc = 0;
+      let acil = 0;
+
+      alarms.forEach(a => {
+        if (a.durum === 'Aktif') active++;
+        else resolved++;
+
+        if (a.ariza_adi.includes('Vakum')) vakum++;
+        else if (a.ariza_adi.includes('Kapak')) kapak++;
+        else if (a.ariza_adi.includes('Basınç')) basinc++;
+        else if (a.ariza_adi.includes('Acil')) acil++;
+      });
+
+      document.getElementById('stat-total-alarms').innerHTML = `${total} <span>adet</span>`;
+      document.getElementById('stat-active-alarms').innerHTML = `${active} <span>aktif</span>`;
+      document.getElementById('stat-resolved-alarms').innerHTML = `${resolved} <span>çözüldü</span>`;
+      document.getElementById('stat-vakum-count').innerHTML = `${vakum} <span>defa</span>`;
+      document.getElementById('stat-kapak-count').innerHTML = `${kapak} <span>defa</span>`;
+      document.getElementById('stat-basinc-count').innerHTML = `${basinc} <span>defa</span>`;
+      document.getElementById('stat-acil-count').innerHTML = `${acil} <span>defa</span>`;
+    }
+
+    function exportAlarmsToCSV() {
+      if (!allAlarmsCache || allAlarmsCache.length === 0) {
+        alert('İndirilecek arıza kaydı bulunmuyor.');
+        return;
+      }
+      let csv = 'ID,Ariza Adi,Baslangic Zamani,Bitis Zamani,Toplam Sure,Durum\n';
+      allAlarmsCache.forEach(a => {
+        csv += `"${a.id}","${a.ariza_adi}","${a.baslangic_zamani}","${a.bitis_zamani || ''}","${a.toplam_sure || a.gecen_sure || ''}","${a.durum}"\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `otoklav_ariza_gunlugu_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // ----------------------------------------------------------------
+    // 9. Rapor Görünümü Güncelleme
+    // ----------------------------------------------------------------
+    function updateReportView() {
+      const now = new Date();
+      document.getElementById('rep-date').textContent = now.toLocaleString('tr-TR');
+      document.getElementById('rep-prog').textContent = document.getElementById('prog-badge-val').textContent;
+      document.getElementById('rep-step').textContent = document.getElementById('step-name').textContent;
+      document.getElementById('rep-temp').textContent = document.getElementById('kpi-temp-val').textContent;
+      document.getElementById('rep-press').textContent = document.getElementById('kpi-press-val').textContent;
+
+      const sideModelEl = document.getElementById('sidebar-device-model');
+      const sideIpEl = document.getElementById('sidebar-device-ip');
+      const repDevEl = document.getElementById('rep-device-info');
+      if (repDevEl && sideModelEl && sideIpEl) {
+        repDevEl.textContent = `${sideModelEl.textContent} ${sideIpEl.textContent}`;
+      }
+
+      fetchAlarms().then(() => {
+        const repBody = document.getElementById('rep-alarms-body');
+        if (!repBody) return;
+        if (!allAlarmsCache || allAlarmsCache.length === 0) {
+          repBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-dim); padding: 15px;">Herhangi bir arıza meydana gelmedi.</td></tr>';
+        } else {
+          let html = '';
+          allAlarmsCache.slice(0, 10).forEach(a => {
+            html += `
+              <tr>
+                <td style="font-weight: 700;">${a.ariza_adi}</td>
+                <td class="table-mono">${a.baslangic_zamani}</td>
+                <td class="table-mono">${a.bitis_zamani || '-'}</td>
+                <td class="table-mono">${a.toplam_sure || a.gecen_sure || '-'}</td>
+                <td><span class="badge ${a.durum === 'Aktif' ? 'badge-danger' : 'badge-success'}">${a.durum}</span></td>
+              </tr>
+            `;
+          });
+          repBody.innerHTML = html;
+        }
+      });
+    }
+
+    // ----------------------------------------------------------------
+    // 10. Sayaç ve Saat
+    // ----------------------------------------------------------------
+    function startWorkTimer() {
+      workTimerInterval = setInterval(() => {
+        totalWorkSeconds++;
+        const hrs = Math.floor(totalWorkSeconds / 3600);
+        const mins = Math.floor((totalWorkSeconds % 3600) / 60);
+        const secs = totalWorkSeconds % 60;
+        const durStr = `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        const el = document.getElementById('duration-val');
+        if (el) el.textContent = durStr;
+
+        // Dijital Saat
+        const now = new Date();
+        const clockEl = document.getElementById('sidebar-clock');
+        if (clockEl) clockEl.textContent = now.toLocaleTimeString('tr-TR');
+      }, 1000);
+    }
+
+    function togglePause() {
+      isPaused = !isPaused;
+      const icon = document.getElementById('pause-icon');
+      const text = document.getElementById('pause-text');
+      if (isPaused) {
+        icon.textContent = '▶️';
+        text.textContent = 'Akışı Sürdür';
+      } else {
+        icon.textContent = '⏸';
+        text.textContent = 'Akışı Duraklat';
+        refreshAll();
+      }
+    }
+
+    function refreshAll() {
+      fetchLiveTelemetry();
+      checkHmiConnection();
+      fetchAlarms();
+    }
+
+    // ----------------------------------------------------------------
+    // 12. Başlatma Döngüsü
+    // ----------------------------------------------------------------
+    window.addEventListener('DOMContentLoaded', () => {
+      initTheme();
+      initCharts();
+      startWorkTimer();
+      checkInitialPath();
+
+      // Canlı döngüler
+      refreshAll();
+      setInterval(fetchLiveTelemetry, 1000);
+      setInterval(checkHmiConnection, 2000);
+      setInterval(fetchAlarms, 4000);
+    });
+  </script>
+</body>
+</html>
